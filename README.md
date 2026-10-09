@@ -355,6 +355,7 @@ Minecraft-Hopper-Performance-Research/
 │   └── hopper_additional_analysis.R
 │
 ├── figures/
+│   ├── hopper_diminishing_returns.png
 │   ├── median_vs_p95.png
 │   ├── cpu_usage.png
 │   └── max_mspt_spikes.png
