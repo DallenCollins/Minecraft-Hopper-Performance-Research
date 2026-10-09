@@ -2,11 +2,11 @@
 
 ### An Experimental Investigation of Hopper-Check Intervals and Server Performance
 
-**Experimental Platform:** Minecraft Java Edition — Paper Server  
-**Sample Size:** 48 trials across 8 randomized blocks  
-**Hoppers Tested:** 10,000  
-**Analysis Software:** RStudio  
+**Minecraft Version:** Java Edition 26.2
+**Server Software:** Paper 26.2
+**Hosting Provider:** PebbleHost
 **Performance Monitoring:** Spark Profiler
+**Statistical Analysis:** RStudio
 
 ---
 
