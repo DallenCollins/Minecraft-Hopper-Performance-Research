@@ -209,7 +209,19 @@ The experiment was analyzed using R.
 
 Because each randomized block contained measurements from every condition, the analysis accounted for the repeated-block structure.
 
-### 4.1 Overall Differences
+### 4.1 Hopper-Check-Only Analysis
+
+To determine whether hopper-check settings affected server performance independently of the no-hopper baseline, a Friedman test was conducted using only the five hopper-check conditions.
+
+**Friedman test:** χ²(4) = 18.6, p = 0.0009417
+
+The result was statistically significant (p < 0.001), indicating that at least some hopper-check settings differed in observed median MSPT.
+
+The mean MSPT values exhibited diminishing improvements as hopper-check increased. However, the overall test does not identify which individual settings differ, and the previously conducted Holm-adjusted adjacent comparisons did not reach statistical significance.
+
+These results support the conclusion that hopper-check configuration influences observed server performance under the tested conditions, while uncertainty remains about the magnitude of differences between neighboring settings.
+
+### 4.2 Overall Differences
 
 A repeated-measures ANOVA was conducted across all six conditions, including the no-hopper baseline.
 
@@ -223,7 +235,7 @@ Both tests detected overall differences among the six experimental conditions.
 
 Because these tests included the no-hopper baseline, their statistical significance does not by itself establish differences among the five hopper-check settings.
 
-### 4.2 Adjacent Hopper-Check Comparisons
+### 4.3 Adjacent Hopper-Check Comparisons
 
 Paired t-tests were performed between neighboring hopper-check settings.
 
@@ -244,7 +256,6 @@ For example, the HC 8 versus HC 16 comparison produced an unadjusted 95% confide
 
 Although the observed difference was only 0.030 ms, the interval indicates that meaningful differences cannot be ruled out with the current sample size.
 
-An overall test restricted to hopper-check conditions, excluding the baseline, is a useful additional analysis for future revisions.
 
 ---
 
@@ -298,7 +309,7 @@ The observed mean median MSPT decreased substantially between HC 1 and HC 4, whi
 
 The 95th-percentile MSPT and process CPU observations also exhibited the largest overall changes at lower intervals.
 
-The experiment's overall statistical tests identified differences among the six conditions, although individual adjacent-setting comparisons were not statistically significant after multiple-comparison correction.
+A Friedman test restricted to the five hopper-check settings identified a statistically significant overall difference in observed median MSPT (χ²(4) = 18.6, p = 0.0009417). However, comparisons between individual adjacent settings did not remain statistically significant after Holm correction. This indicates that hopper-check configuration affects measured server performance, while the precise benefits of increasing the interval between neighboring settings remain uncertain.
 
 The results are consistent with diminishing returns, but do not establish statistical equivalence among the higher hopper-check settings or identify a universally optimal configuration.
 
@@ -357,7 +368,7 @@ The `data/` directory contains the 48 randomized experimental measurements and a
 The `analysis/` directory contains the R scripts used to process the measurements, perform statistical tests, and produce figures.
 
 The `figures/` directory contains the resulting graphs.
-
+ 
 Available original Spark profiling records may be preserved in `profiles/` to support further investigation.
 
 `METHODS.md` is intended for extended documentation of the experimental setup and procedure.
