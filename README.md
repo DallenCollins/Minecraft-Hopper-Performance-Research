@@ -8,6 +8,8 @@ An experimental investigation into Minecraft Paper server performance, using 10,
 
 ![Diminishing Returns of Hopper-Check](figures/hopper_diminishing_returns.png)
 
+**[Full Experimental Methodology](METHODS.md)**
+
 ## Abstract
 
 Hoppers are a fundamental component of technical Minecraft, enabling automated farms, sorting systems, and large-scale item transportation. However, substantial numbers of hoppers can contribute to server processing overhead.
