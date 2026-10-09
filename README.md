@@ -1,274 +1,334 @@
 # Minecraft Hopper Performance Research
 
-### An Experimental Investigation of Hopper-Check Intervals and Server Performance
+### Investigating the Relationship Between Hopper-Check Intervals and Server Performance
 
-**Minecraft Version:** Java Edition 26.2
-**Server Software:** Paper 26.2
-**Hosting Provider:** PebbleHost
-**Performance Monitoring:** Spark Profiler
-**Statistical Analysis:** RStudio
+An experimental investigation into the performance implications of Minecraft Paper's `hopper-check` setting, using 10,000 hoppers, 48 randomized trials, Spark performance measurements, and statistical analysis in R.
+
+![Hopper Performance Results](figures/median_vs_p95.png)
+
+## Abstract
+
+Minecraft servers frequently experience performance challenges when handling large numbers of hoppers. One approach to reducing server workload is increasing the interval at which hoppers check for available items.
+
+However, the relationship between hopper-check frequency and server performance is not necessarily linear.
+
+This study investigated the effects of five hopper-check settings (1, 2, 4, 8, and 16) on Minecraft Paper server performance, using a randomized complete block design involving 48 trials.
+
+The results demonstrated a diminishing-returns pattern in the observed average median MSPT. Increasing hopper-check from 1 to 4 produced substantial improvements, while further increases to 8 and 16 yielded comparatively small additional reductions.
+
+Although overall differences across experimental conditions were statistically significant, adjacent hopper-check comparisons did not remain significant after correcting for multiple comparisons.
+
+These findings suggest that balancing hopper responsiveness and server performance may be more useful than simply maximizing the hopper-check interval.
 
 ---
 
 ## 1. Introduction
 
-Hoppers are among the most frequently discussed sources of performance issues on Minecraft servers. Large automatic farms often rely on thousands of hoppers, creating additional processing demands on the server.
+Hoppers are essential components of Minecraft's technical infrastructure. They are widely used for automated storage systems, item sorting, resource collection, and industrial-scale farms.
 
-One method of reducing this demand is adjusting the `hopper-check` setting in Paper's configuration. This setting controls how frequently hoppers check for items in inventories above them.
+On large multiplayer servers, these systems can contain thousands or even tens of thousands of hoppers.
 
-Increasing the interval reduces the frequency of these checks, potentially improving server performance. However, it also slows how quickly hoppers can detect available items.
+Each hopper introduces processing requirements, potentially contributing to overall server tick time.
 
-This introduces an important question:
+Paper allows administrators to adjust `hopper-check`, changing how frequently hoppers check for items in inventories above them.
 
-**At what point does increasing the hopper-check interval stop providing meaningful performance improvements?**
+Increasing this interval may reduce server workload. However, less frequent checks can also affect the responsiveness of hopper-based machinery.
 
-Doubling the interval from 1 to 2 ticks might reduce server workload considerably. But does doubling it again from 8 to 16 ticks offer a comparable benefit?
+This creates a tradeoff between performance and functionality.
 
-This experiment investigates that relationship using randomized testing and statistical analysis.
+### Research Question
 
-## 2. Research Question
-
-How does increasing the hopper-check interval affect Minecraft Paper server performance, and at what point do the performance improvements begin to diminish?
+**How does increasing hopper-check affect server performance, and at what point do further increases produce diminishing returns?**
 
 ### Hypothesis
 
-Increasing the hopper-check interval will initially produce substantial reductions in server processing time, but the improvements will become progressively smaller at higher settings.
+Increasing hopper-check will initially reduce server processing time substantially, but the magnitude of additional improvements will decrease at higher settings.
 
-The expected relationship is a diminishing-returns curve rather than a constant linear improvement.
+---
 
-## 3. Experimental Methods
+## 2. Materials and Methods
 
-### Test Environment
+### Experimental Environment
 
-The experiment was conducted on a Paper Minecraft server hosted through PebbleHost.
-
-A controlled test area containing **10,000 hoppers** was constructed to create a consistent workload.
-
-The hopper-check settings investigated were:
-
-| Condition | Hopper-Check |
-|---|---:|
-| Baseline | No hoppers |
-| HC 1 | 1 |
-| HC 2 | 2 |
-| HC 4 | 4 |
-| HC 8 | 8 |
-| HC 16 | 16 |
+| Variable | Configuration |
+|---|---|
+| Minecraft | Java Edition |
+| Server Software | Paper 26.2 |
+| Hosting Provider | PebbleHost |
+| Hoppers | 10,000 |
+| Experimental Conditions | Baseline, HC 1, 2, 4, 8, 16 |
+| Trials per Condition | 8 |
+| Total Trials | 48 |
+| Performance Monitoring | Spark |
+| Statistical Software | R / RStudio |
 
 ### Experimental Design
 
-A randomized complete block design was used.
+A randomized complete block design was used to reduce the influence of changing server conditions.
 
-Eight blocks were conducted, each containing one measurement of every condition, including baseline. The order of conditions was randomized within each block using R.
+Eight blocks were conducted. Each block contained all six experimental conditions, with their order randomized.
 
-This produced:
+The baseline condition consisted of the test environment without the 10,000 hoppers.
 
-- 5 hopper-check settings
-- 8 measurements per setting
-- 8 baseline measurements
-- **48 total trials**
+The five experimental hopper-check settings were:
 
-Randomizing the order helped reduce the influence of changes in server conditions over time.
+`1`, `2`, `4`, `8`, and `16`
 
 ### Testing Procedure
 
-Each measurement followed the same general procedure:
-
 1. Configure the selected hopper-check setting.
-2. Restart the Paper server to apply the configuration.
-3. Allow approximately 30 seconds for server stabilization.
-4. Begin a 60-second Spark profiling session.
-5. Record the reported server performance statistics.
-6. Repeat for the next condition in the randomized sequence.
+2. Restart the Paper server to apply the change.
+3. Allow approximately 30 seconds for stabilization.
+4. Run a 60-second Spark profiling session.
+5. Record the available server performance measurements.
+6. Continue to the next randomized condition.
 
-For baseline trials, all 10,000 hoppers were removed.
+### Measurements
 
-The primary response variable was **median milliseconds per tick (MSPT)**, with lower values indicating better server performance.
+The primary response variable was median milliseconds per tick (MSPT).
 
-Minimum MSPT, 95th-percentile MSPT, maximum MSPT, TPS, and CPU usage were also observed.
+Additional recorded measurements included:
 
-### Limitations of Measurement
+- 95th-percentile MSPT
+- Maximum MSPT
+- Reported 1-minute CPU process usage
+- Reported 15-minute CPU process usage
 
-Median MSPT represents overall server tick processing time rather than the isolated processing cost of hoppers.
+Lower MSPT values indicate less processing time per server tick.
 
-Consequently, this experiment measures the association between hopper-check settings and observed server performance under the tested conditions.
+**Measurement note:** Spark's summary statistics may reflect different observation windows from the profiling session itself. Accordingly, the reported statistics are treated as observations collected during each trial, rather than verified measurements exclusively from the 60-second profiling interval.
 
-The measurements cannot directly establish how much CPU time individual hopper operations consumed.
+---
 
-## 4. Results
+## 3. Results
 
-### Average Median MSPT
+### 3.1 Server Tick Performance
 
-Each value represents the arithmetic mean of eight trial-level median MSPT measurements.
+The following results represent the arithmetic mean of the eight trial-level measurements in each condition.
 
-| Condition | Mean Median MSPT (ms) | Standard Deviation |
+| Condition | Mean Median MSPT | Mean 95th-Percentile MSPT |
 |---|---:|---:|
-| Baseline | 0.844 | 0.185 |
-| HC 1 | 4.024 | 1.140 |
-| HC 2 | 2.948 | 0.607 |
-| HC 4 | 2.258 | 0.733 |
-| HC 8 | 2.181 | 0.324 |
-| HC 16 | 2.151 | 0.406 |
+| Baseline | 0.844 ms | 2.80 ms |
+| HC 1 | 4.024 ms | 9.46 ms |
+| HC 2 | 2.948 ms | 7.40 ms |
+| HC 4 | 2.258 ms | 5.50 ms |
+| HC 8 | 2.181 ms | 5.33 ms |
+| HC 16 | 2.151 ms | 5.50 ms |
 
-The largest improvements occurred at the lower hopper-check settings.
+![Median vs 95th Percentile](figures/median_vs_p95.png)
 
-Performance improvements became substantially smaller between HC 4, HC 8, and HC 16.
+Both median and 95th-percentile MSPT decreased substantially between HC 1 and HC 4.
 
-### Baseline-Adjusted Results
+Beyond HC 4, the observed improvements were considerably smaller.
 
-To estimate the additional processing time associated with the hopper test conditions, the baseline measurement from each randomized block was subtracted from its corresponding hopper measurements.
+Although HC 16 recorded the lowest mean median MSPT, HC 8 recorded a slightly lower mean 95th-percentile MSPT.
 
-| Hopper-Check | Baseline-Adjusted MSPT (ms) |
+These differences are descriptive and do not independently establish a statistically meaningful performance advantage.
+
+### 3.2 Baseline-Adjusted Performance
+
+To account for underlying server processing requirements, each hopper condition was compared with the baseline measurement from its corresponding randomized block.
+
+| Hopper-Check | Mean Baseline-Adjusted MSPT |
 |---|---:|
-| HC 1 | 3.180 |
-| HC 2 | 2.104 |
-| HC 4 | 1.414 |
-| HC 8 | 1.338 |
-| HC 16 | 1.308 |
+| HC 1 | 3.180 ms |
+| HC 2 | 2.104 ms |
+| HC 4 | 1.414 ms |
+| HC 8 | 1.338 ms |
+| HC 16 | 1.308 ms |
 
-These adjusted values describe differences in server-wide median MSPT. They are not direct measurements of hopper CPU time.
+Baseline-adjusted MSPT represents the difference between trial-level median MSPT measurements. It does not directly measure the processing time consumed by hopper code.
 
-### Performance Improvements
+### 3.3 Diminishing Returns
 
-The observed average reductions in baseline-adjusted MSPT were:
-
-| Comparison | Reduction (ms) |
+| Interval Increase | Observed MSPT Reduction |
 |---|---:|
-| HC 1 → HC 2 | 1.076 |
-| HC 2 → HC 4 | 0.690 |
-| HC 4 → HC 8 | 0.076 |
-| HC 8 → HC 16 | 0.030 |
+| HC 1 → HC 2 | 1.076 ms |
+| HC 2 → HC 4 | 0.690 ms |
+| HC 4 → HC 8 | 0.076 ms |
+| HC 8 → HC 16 | 0.030 ms |
 
-The diminishing magnitude of these improvements is consistent with the original hypothesis.
+The progressively smaller reductions illustrate the diminishing-returns pattern observed in the experiment.
 
-## 5. Statistical Analysis
+The practical importance of these differences depends on the accuracy and uncertainty of the measurements, as well as the operational effects of changing hopper-check.
 
-Statistical analysis was conducted in RStudio.
+### 3.4 CPU Usage
 
-A repeated-measures analysis of variance (ANOVA) was performed to determine whether server performance differed among the six experimental conditions.
+Reported 1-minute CPU process usage was also recorded.
 
-A Friedman test was also performed as a nonparametric alternative.
-
-### Overall Statistical Tests
-
-| Test | p-value |
+| Condition | Mean Reported CPU Usage |
 |---|---:|
-| Repeated-measures ANOVA | 4.9 × 10⁻¹⁰ |
-| Friedman test | 0.0000232 |
+| Baseline | 4.70% |
+| HC 1 | 8.35% |
+| HC 2 | 7.22% |
+| HC 4 | 6.01% |
+| HC 8 | 6.07% |
+| HC 16 | 5.88% |
 
-Both analyses identified statistically significant overall differences among the experimental conditions.
+![CPU Usage by Hopper-Check](figures/cpu_usage.png)
 
-However, overall significance does not establish that every hopper-check setting differs significantly from its neighboring setting.
+Reported CPU usage generally decreased as hopper-check increased, although the relationship was not strictly monotonic.
+
+Because these measurements represent process-wide CPU usage over reporting windows that may overlap adjacent trials, they should be interpreted as supplementary observations rather than isolated hopper-processing costs.
+
+### 3.5 Maximum MSPT
+
+Maximum tick-processing time was also recorded to investigate unusual performance spikes.
+
+![Maximum MSPT Spikes](figures/max_mspt_spikes.png)
+
+Several trials exhibited maximum MSPT values exceeding 1,000 milliseconds.
+
+The causes of these spikes were not isolated, so they cannot confidently be attributed to hopper behavior.
+
+Maximum MSPT is therefore presented as a diagnostic measurement rather than a primary indicator of the effect of hopper-check.
+
+---
+
+## 4. Statistical Analysis
+
+Data were analyzed in R using repeated-measures statistical methods.
+
+### Overall Tests
+
+| Statistical Test | Result |
+|---|---|
+| Repeated-Measures ANOVA | F(5, 35) = 22.49 |
+| ANOVA p-value | 4.9 × 10⁻¹⁰ |
+| Friedman Test | χ²(5) = 29.00 |
+| Friedman p-value | 0.0000232 |
+
+Both tests identified differences among the six experimental conditions, including the no-hopper baseline.
+
+These overall tests do not establish that every hopper-check setting differs from the others.
 
 ### Pairwise Comparisons
 
-Paired t-tests were used to compare consecutive hopper-check settings. Holm correction was applied to account for multiple comparisons.
+Paired t-tests were used to compare adjacent hopper-check settings, with Holm adjustment for multiple comparisons.
 
-| Comparison | Mean Difference (ms) | Adjusted p-value |
+| Comparison | Mean MSPT Difference | Adjusted p-value |
 |---|---:|---:|
-| HC 1 vs HC 2 | 1.076 | 0.149 |
-| HC 2 vs HC 4 | 0.690 | 0.208 |
-| HC 4 vs HC 8 | 0.076 | 1.000 |
-| HC 8 vs HC 16 | 0.030 | 1.000 |
+| HC 1 vs HC 2 | 1.076 ms | 0.149 |
+| HC 2 vs HC 4 | 0.690 ms | 0.208 |
+| HC 4 vs HC 8 | 0.076 ms | 1.000 |
+| HC 8 vs HC 16 | 0.030 ms | 1.000 |
 
-None of the four adjacent-setting comparisons remained statistically significant at the 0.05 threshold after correction.
+None of the adjacent comparisons remained statistically significant at α = 0.05 after Holm correction.
 
-The HC 8 versus HC 16 comparison produced a 95% confidence interval of approximately −0.421 to 0.481 ms.
+This does not mean the settings are equivalent. It means the current data do not establish statistically significant differences for those individual comparisons under the selected procedure.
 
-The observed difference was small, but the confidence interval remains too wide to establish statistical equivalence.
+For example, the HC 8 versus HC 16 comparison produced a mean difference of 0.030 ms, with an unadjusted 95% confidence interval extending approximately from −0.421 to 0.481 ms.
 
-## 6. Discussion
-
-The results suggest that increasing the hopper-check interval produces diminishing improvements in overall server performance.
-
-The largest observed reductions occurred when increasing the interval from 1 to 2 and from 2 to 4.
-
-At higher intervals, the performance curve became nearly flat.
-
-This has practical implications for Minecraft server administration.
-
-Increasing hopper-check intervals introduces a tradeoff: reducing the frequency of inventory checks may improve server performance, but it can also reduce the responsiveness of hopper-based systems.
-
-A setting that maximizes performance is not necessarily the setting that provides the best balance between performance and gameplay mechanics.
-
-### HC 8 Versus HC 16
-
-One of the most notable observations was the similarity between HC 8 and HC 16.
-
-Across eight trials, their average median MSPT values were:
-
-**HC 8:** 2.181 ms  
-**HC 16:** 2.151 ms
-
-The difference was only 0.030 ms.
-
-Although this represents a small observed benefit from doubling the interval, the statistical analysis does not establish that the two settings are equivalent.
-
-Further controlled testing would be required to estimate that difference more precisely.
-
-### Experimental Limitations
-
-Several factors should be considered when interpreting these results:
-
-- The experiment was conducted in one Paper server environment.
-- Server-wide MSPT was measured rather than hopper-specific CPU time.
-- Server restarts were required between configuration changes.
-- Approximately 30 seconds of stabilization preceded each profiling session.
-- Some trials exhibited large maximum-MSPT spikes that were not individually diagnosed.
-- The experiment tested a single hopper arrangement and workload.
-
-Additionally, the baseline-adjustment procedure subtracts trial medians, which does not necessarily equal the median processing cost attributable to hoppers.
-
-These limitations restrict how broadly the findings can be generalized.
-
-## 7. Conclusion
-
-This experiment investigated the effect of hopper-check intervals on Minecraft Paper server performance using 10,000 hoppers and 48 randomized trials.
-
-The observed results were consistent with diminishing returns.
-
-Increasing hopper-check from 1 to 4 produced substantial reductions in average median MSPT, while further increases to 8 and 16 produced much smaller improvements.
-
-The overall statistical tests identified significant differences among experimental conditions. However, individual comparisons between adjacent hopper-check settings were not statistically significant after correcting for multiple comparisons.
-
-The results therefore support the presence of a diminishing-returns pattern in the observed averages, while leaving uncertainty about the precise benefits of higher hopper-check intervals.
-
-**The practical objective is not simply to make hoppers slower, but to identify how much performance improvement is actually obtained in exchange for that reduced responsiveness.**
-
-## 8. Future Research
-
-Future experiments could investigate:
-
-- Direct CPU time spent processing hopper operations.
-- Different numbers and arrangements of hoppers.
-- Hopper-check intervals under active item-transfer workloads.
-- Hopper-check interactions with hopper-transfer settings.
-- Server performance under realistic farm conditions.
-- Larger sample sizes to estimate small performance differences more precisely.
-- Performance and functional reliability of automated storage systems.
-
-These experiments would help establish whether the observed relationship remains consistent under different workloads and server configurations.
+The study therefore cannot rule out differences that may be relevant under some workloads.
 
 ---
 
-## Repository Contents
+## 5. Discussion
 
-`data/` — Raw experimental measurements and randomized trial order.
+The results are consistent with the hypothesis that increasing hopper-check produces diminishing improvements in observed server performance.
 
-`analysis/` — R scripts used for statistical analysis.
+The largest reductions in MSPT occurred at lower hopper-check settings.
 
-`figures/` — Performance graphs and visualizations.
+Between HC 4 and HC 16, the average median MSPT curve approached a plateau.
 
-`reports/` — Detailed experimental findings and future research.
+This matters because increasing hopper-check involves a potential functional tradeoff.
+
+Reducing the frequency of inventory checks may improve performance, but it can also affect the operation of automated systems that depend on timely item detection.
+
+Therefore, the best configuration is not necessarily the one with the lowest possible MSPT.
+
+It may instead be the configuration that preserves reliable machinery while achieving most of the available performance improvement.
+
+### Practical Implications
+
+Under the experimental conditions, HC 4, HC 8, and HC 16 produced relatively similar average median MSPT values compared with the larger differences observed at lower settings.
+
+This suggests that server administrators should evaluate whether the additional performance benefit of larger hopper-check intervals justifies the corresponding change in hopper behavior.
+
+These results are not sufficient to recommend a universally optimal setting across all Minecraft servers.
+
+### Limitations
+
+This investigation has several important limitations:
+
+1. Only one server environment was tested.
+2. All measurements were obtained using one hopper arrangement and workload.
+3. The primary measurements represent overall server performance rather than hopper-specific processing time.
+4. Server restarts occurred between configuration changes.
+5. The observation windows underlying Spark summary values were not independently verified against profiling intervals.
+6. Only eight repeated measurements were collected per condition.
+7. Rare maximum-MSPT spikes were not individually diagnosed.
+8. The experiment did not directly measure hopper-based machinery reliability or item throughput.
+
+Future studies should investigate these factors before generalizing the results to production servers.
 
 ---
 
-## Reproducibility
+## 6. Conclusion
 
-All 48 trial measurements and the R analysis script are intended to be included in this repository to allow independent inspection and replication of the statistical analysis.
+This study investigated the relationship between hopper-check intervals and Minecraft Paper server performance using 10,000 hoppers and 48 randomized trials.
 
-The experiment's randomized design, measurement procedure, and analytical methods are documented above.
+The observed performance measurements exhibited diminishing returns as hopper-check increased.
+
+The mean median MSPT declined substantially between HC 1 and HC 4, but additional reductions between HC 4, HC 8, and HC 16 were comparatively small.
+
+Reported 95th-percentile MSPT and CPU process usage also suggested that the largest changes occurred at lower hopper-check settings.
+
+Although overall statistical tests identified differences among the experimental conditions, no individual adjacent-setting comparison remained statistically significant after multiple-comparison correction.
+
+**The central finding is that increasing the frequency interval of hopper checks does not necessarily produce proportional improvements in server performance.**
+
+Determining an appropriate server configuration requires considering both performance and the functional consequences for automated systems.
 
 ---
 
-*Independent Minecraft server performance research.*
+## 7. Future Research
+
+Potential follow-up investigations include:
+
+- Measuring hopper-specific processing time using Spark's sampled profiling call trees.
+- Comparing active and inactive hopper arrangements.
+- Testing larger hopper populations.
+- Studying hopper-transfer and hopper-check interactions.
+- Measuring throughput and reliability in automated storage systems.
+- Investigating performance under realistic multiplayer server activity.
+- Increasing the number of randomized experimental blocks.
+- Examining the reproducibility of results across different server configurations.
+
+---
+
+## Data and Reproducibility
+
+The project includes experimental measurements, statistical analysis scripts, and graphical results.
+
+### Repository Structure
+
+```text
+Minecraft-Hopper-Performance-Research/
+│
+├── README.md
+│
+├── data/
+│   ├── hopper_randomized_trials.csv
+│   └── hopper_complete_data.csv
+│
+├── analysis/
+│   ├── hopper_analysis.R
+│   └── hopper_additional_analysis.R
+│
+├── figures/
+│   ├── median_vs_p95.png
+│   ├── cpu_usage.png
+│   └── max_mspt_spikes.png
+│
+└── reports/
+    └── experiment_01.md
+```
+
+The original trial-level measurements and analysis scripts can be used to reproduce the reported summary statistics and statistical tests.
+
+The additional Spark summary measurements are retained in the expanded dataset for further investigation.
+
+---
+
+*Independent experimental research into Minecraft server performance and technical mechanics.*
