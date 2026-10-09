@@ -6,7 +6,7 @@
 
 An experimental investigation into Minecraft Paper server performance, using 10,000 hoppers, 48 randomized trials, and statistical analysis in R.
 
-![Minecraft Hopper Performance](figures/median_vs_p95.png)
+![Diminishing Returns of Hopper-Check](figures/hopper_diminishing_returns.png)
 
 ## Abstract
 
